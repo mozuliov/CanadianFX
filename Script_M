@@ -1,0 +1,13 @@
+let
+    Source = Csv.Document(Web.Contents("https://www.bankofcanada.ca/valet/observations/group/FX_RATES_DAILY/csv"),[Delimiter=",", Columns=27, Encoding=65001, QuoteStyle=QuoteStyle.None]),
+    // Here we retreive daily rates. If monthly rates needed use FX_RATES_MONTLY group instead of FX_RATES_DAILY
+    
+    #"Removed Top Rows" = Table.Skip(Source,39),
+    #"Promoted Headers" = Table.PromoteHeaders(#"Removed Top Rows", [PromoteAllScalars=true]),
+    #"Unpivoted Columns" = Table.UnpivotOtherColumns(#"Promoted Headers", {"date"}, "Attribute", "Value"),
+    #"Added Custom" = Table.AddColumn(#"Unpivoted Columns", "Custom", each Text.Middle([Attribute],2,3)),
+    #"Changed Type" = Table.TransformColumnTypes(#"Added Custom",{{"date", type date}, {"Custom", type text}, {"Value", type number}}),
+    #"Removed Other Columns" = Table.SelectColumns(#"Changed Type",{"Value", "Custom", "date"}),
+    #"Renamed Columns" = Table.RenameColumns(#"Removed Other Columns",{{"Value", "FX"}, {"Custom", "Currency"}, {"date", "Date"}})
+in
+    #"Renamed Columns"
